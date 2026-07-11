@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QRDrop 管理ページ</title>
+<style>
+:root{--accent:#2563eb;--bg:#f5f6f8;--card:#fff;--muted:#6b7280}
+*{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;margin:0;background:var(--bg);color:#1f2937}
+header{background:var(--accent);color:#fff;padding:.8rem 1.2rem;font-weight:700}
+main{max-width:960px;margin:0 auto;padding:1rem;display:grid;gap:1rem;grid-template-columns:1fr 1fr}
+@media(max-width:720px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border-radius:12px;padding:1.2rem;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.card h2{font-size:1rem;margin:0 0 .8rem}
+#qr{display:block;margin:0 auto;width:280px;height:280px;image-rendering:pixelated}
+#url{word-break:break-all;font-family:monospace;font-size:.8rem;color:var(--muted);text-align:center;margin:.5rem 0}
+#expiry{text-align:center;color:var(--muted);font-size:.85rem}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:.5rem 1rem;cursor:pointer;font-size:.9rem}
+button.secondary{background:#e5e7eb;color:#1f2937}
+select,textarea,input[type=file]{width:100%;padding:.4rem;border:1px solid #d1d5db;border-radius:8px;font-size:.9rem;background:#fff}
+textarea{resize:vertical;min-height:4rem;font-family:inherit}
+ul{list-style:none;margin:0;padding:0}
+li{padding:.5rem;border-bottom:1px solid #eee;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+li .name{flex:1;word-break:break-all}
+li .size{color:var(--muted);font-size:.8rem}
+li pre{width:100%;white-space:pre-wrap;word-break:break-all;background:#f3f4f6;border-radius:6px;padding:.5rem;margin:.3rem 0 0;font-size:.85rem}
+.row{display:flex;gap:.5rem;align-items:center;margin-top:.6rem}
+.empty{color:var(--muted);font-size:.85rem}
+#toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:.5rem 1rem;border-radius:8px;opacity:0;transition:opacity .3s;pointer-events:none;font-size:.85rem}
+#toast.show{opacity:.92}
+.center{text-align:center}
+</style>
+</head>
+<body>
+<header>QRDrop — 同一ネットワーク内データ転送</header>
+<main>
+  <section class="card">
+    <h2>スマホで QR コードを読み取ってください</h2>
+    <img id="qr" alt="接続用 QR コード">
+    <div id="url"></div>
+    <div id="expiry"></div>
+    <div class="row" id="nicRow" hidden>
+      <label for="nic" style="white-space:nowrap">ネットワーク:</label>
+      <select id="nic"></select>
+    </div>
+    <div class="row center" style="justify-content:center">
+      <button id="revoke" class="secondary">セッション終了(QR 再発行)</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>スマホへ送る(共有に追加)</h2>
+    <input type="file" id="shareFiles" multiple>
+    <div class="row"><button id="shareFileBtn">ファイルを共有</button></div>
+    <textarea id="shareText" placeholder="スマホへ送るテキスト"></textarea>
+    <div class="row"><button id="shareTextBtn">テキストを共有</button></div>
+    <h2 style="margin-top:1rem">共有中の項目</h2>
+    <ul id="sharedList"><li class="empty">まだありません</li></ul>
+  </section>
+
+  <section class="card" style="grid-column:1/-1">
+    <h2>スマホから受信した項目</h2>
+    <ul id="receivedList"><li class="empty">まだありません</li></ul>
+  </section>
+</main>
+<div id="toast"></div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+function copyText(text){
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => toast("コピーしました"), () => toast("コピーに失敗しました"));
+    return;
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  const ok = document.execCommand("copy");
+  ta.remove();
+  toast(ok ? "コピーしました" : "コピーに失敗しました");
+}
+
+function fmtSize(n){
+  if (n < 1024) return n + " B";
+  if (n < 1048576) return (n/1024).toFixed(1) + " KB";
+  if (n < 1073741824) return (n/1048576).toFixed(1) + " MB";
+  return (n/1073741824).toFixed(2) + " GB";
+}
+
+async function loadInfo(){
+  const res = await fetch("/admin/info");
+  const info = await res.json();
+  $("qr").src = "/admin/qr.png?v=" + Date.now();
+  $("url").textContent = info.url;
+  $("expiry").textContent = "有効期限: " + new Date(info.expiresAt).toLocaleString();
+  if (info.ips.length > 1) {
+    $("nicRow").hidden = false;
+    $("nic").innerHTML = info.ips.map(ip =>
+      `<option value="${ip}"${ip === info.selectedIp ? " selected" : ""}>${ip}</option>`).join("");
+  }
+}
+
+function renderItem(it, actions){
+  const li = document.createElement("li");
+  const name = document.createElement("span");
+  name.className = "name";
+  name.textContent = it.kind === "text" ? "テキスト" : it.name;
+  li.appendChild(name);
+  const size = document.createElement("span");
+  size.className = "size";
+  size.textContent = fmtSize(it.size);
+  li.appendChild(size);
+  if (it.kind === "text") {
+    const btn = document.createElement("button");
+    btn.textContent = "コピー";
+    btn.onclick = () => copyText(it.text);
+    li.appendChild(btn);
+    const pre = document.createElement("pre");
+    pre.textContent = it.text.length > 500 ? it.text.slice(0, 500) + "…" : it.text;
+    li.appendChild(pre);
+  }
+  if (actions) actions(li, it);
+  return li;
+}
+
+function renderList(el, items, actions){
+  el.innerHTML = "";
+  if (!items || items.length === 0) {
+    el.innerHTML = '<li class="empty">まだありません</li>';
+    return;
+  }
+  for (const it of items) el.appendChild(renderItem(it, actions));
+}
+
+async function loadItems(){
+  const res = await fetch("/admin/items");
+  const data = await res.json();
+  renderList($("receivedList"), data.received);
+  renderList($("sharedList"), data.shared);
+}
+
+async function postShare(fd){
+  const res = await fetch("/admin/share", { method: "POST", body: fd });
+  if (!res.ok) {
+    toast("共有に失敗しました: " + (await res.text()).trim());
+    return false;
+  }
+  return true;
+}
+
+$("shareFileBtn").onclick = async () => {
+  const files = $("shareFiles").files;
+  if (files.length === 0) { toast("ファイルを選択してください"); return; }
+  const fd = new FormData();
+  for (const f of files) fd.append("file", f);
+  if (await postShare(fd)) { $("shareFiles").value = ""; toast("共有に追加しました"); }
+};
+
+$("shareTextBtn").onclick = async () => {
+  const text = $("shareText").value;
+  if (!text.trim()) { toast("テキストを入力してください"); return; }
+  const fd = new FormData();
+  fd.append("text", text);
+  if (await postShare(fd)) { $("shareText").value = ""; toast("共有に追加しました"); }
+};
+
+$("revoke").onclick = async () => {
+  await fetch("/admin/session/revoke", { method: "POST" });
+  await loadInfo();
+  toast("セッションを再発行しました。新しい QR を読み取ってください");
+};
+
+$("nic").onchange = async e => {
+  const fd = new URLSearchParams({ ip: e.target.value });
+  await fetch("/admin/interface", { method: "POST", body: fd });
+  await loadInfo();
+};
+
+new EventSource("/admin/events").onmessage = loadItems;
+loadInfo();
+loadItems();
+</script>
+</body>
+</html>

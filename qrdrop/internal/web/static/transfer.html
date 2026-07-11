@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QRDrop 転送ページ</title>
+<style>
+:root{--accent:#2563eb;--bg:#f5f6f8;--muted:#6b7280}
+*{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;margin:0;background:var(--bg);color:#1f2937}
+header{background:var(--accent);color:#fff;padding:.8rem 1.2rem;font-weight:700}
+main{max-width:640px;margin:0 auto;padding:1rem;display:grid;gap:1rem}
+.card{background:#fff;border-radius:12px;padding:1.2rem;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.card h2{font-size:1rem;margin:0 0 .8rem}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:.6rem 1.2rem;cursor:pointer;font-size:1rem}
+button:disabled{opacity:.5}
+textarea,input[type=file]{width:100%;padding:.5rem;border:1px solid #d1d5db;border-radius:8px;font-size:1rem;background:#fff}
+textarea{resize:vertical;min-height:4.5rem;font-family:inherit}
+.row{display:flex;gap:.5rem;align-items:center;margin-top:.6rem}
+progress{width:100%;height:10px;display:none}
+progress.active{display:block}
+ul{list-style:none;margin:0;padding:0}
+li{padding:.6rem .2rem;border-bottom:1px solid #eee;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+li .name{flex:1;word-break:break-all}
+li .size{color:var(--muted);font-size:.8rem}
+li a{color:var(--accent);text-decoration:none;font-weight:600}
+li pre{width:100%;white-space:pre-wrap;word-break:break-all;background:#f3f4f6;border-radius:6px;padding:.5rem;margin:.3rem 0 0;font-size:.9rem}
+.empty{color:var(--muted);font-size:.9rem}
+#status{font-size:.85rem;color:var(--muted);margin-top:.4rem;min-height:1.2em}
+#toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:.5rem 1rem;border-radius:8px;opacity:0;transition:opacity .3s;pointer-events:none;font-size:.9rem}
+#toast.show{opacity:.92}
+#expired{display:none;background:#fef2f2;color:#b91c1c;border-radius:8px;padding:.8rem;margin-bottom:.5rem}
+</style>
+</head>
+<body>
+<header>QRDrop — PC とのデータ転送</header>
+<main>
+  <div id="expired">セッションが無効になりました。PC の管理ページに表示されている QR コードを読み取り直してください。</div>
+
+  <section class="card">
+    <h2>PC へ送る</h2>
+    <input type="file" id="files" multiple>
+    <div class="row"><button id="uploadBtn">送信</button></div>
+    <progress id="prog" max="100" value="0"></progress>
+    <div id="status"></div>
+    <textarea id="text" placeholder="PC へ送るテキスト"></textarea>
+    <div class="row"><button id="textBtn">テキストを送信</button></div>
+  </section>
+
+  <section class="card">
+    <h2>PC から受け取る</h2>
+    <ul id="items"><li class="empty">共有された項目はまだありません</li></ul>
+  </section>
+</main>
+<div id="toast"></div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const base = location.pathname.replace(/\/+$/, ""); // /s/<token>
+
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+function expired(){
+  $("expired").style.display = "block";
+  window.scrollTo(0, 0);
+}
+
+function copyText(text){
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => toast("コピーしました"), () => toast("コピーに失敗しました"));
+    return;
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  const ok = document.execCommand("copy");
+  ta.remove();
+  toast(ok ? "コピーしました" : "コピーに失敗しました");
+}
+
+function fmtSize(n){
+  if (n < 1024) return n + " B";
+  if (n < 1048576) return (n/1024).toFixed(1) + " KB";
+  if (n < 1073741824) return (n/1048576).toFixed(1) + " MB";
+  return (n/1073741824).toFixed(2) + " GB";
+}
+
+// アップロード(XHR: 進捗表示のため。REQ-006)
+$("uploadBtn").onclick = () => {
+  const files = $("files").files;
+  if (files.length === 0) { toast("ファイルを選択してください"); return; }
+  const fd = new FormData();
+  for (const f of files) fd.append("file", f);
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", base + "/upload");
+  const prog = $("prog");
+  prog.classList.add("active");
+  prog.value = 0;
+  $("uploadBtn").disabled = true;
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) {
+      prog.value = Math.round(e.loaded / e.total * 100);
+      $("status").textContent = "送信中… " + prog.value + "%";
+    }
+  };
+  xhr.onload = () => {
+    $("uploadBtn").disabled = false;
+    prog.classList.remove("active");
+    if (xhr.status === 200) {
+      $("files").value = "";
+      $("status").textContent = "";
+      toast("送信しました");
+    } else if (xhr.status === 403) {
+      expired();
+    } else {
+      $("status").textContent = "";
+      toast("送信に失敗しました: " + xhr.responseText.trim());
+    }
+  };
+  xhr.onerror = () => {
+    $("uploadBtn").disabled = false;
+    prog.classList.remove("active");
+    $("status").textContent = "";
+    toast("送信に失敗しました。PC との接続を確認してください");
+  };
+  xhr.send(fd);
+};
+
+$("textBtn").onclick = async () => {
+  const text = $("text").value;
+  if (!text.trim()) { toast("テキストを入力してください"); return; }
+  try {
+    const res = await fetch(base + "/text", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ text })
+    });
+    if (res.status === 403) { expired(); return; }
+    if (!res.ok) { toast("送信に失敗しました"); return; }
+    $("text").value = "";
+    toast("送信しました");
+  } catch {
+    toast("送信に失敗しました。PC との接続を確認してください");
+  }
+};
+
+async function loadItems(){
+  let res;
+  try {
+    res = await fetch(base + "/items");
+  } catch {
+    return;
+  }
+  if (res.status === 403) { expired(); return; }
+  const data = await res.json();
+  const ul = $("items");
+  ul.innerHTML = "";
+  if (!data.items || data.items.length === 0) {
+    ul.innerHTML = '<li class="empty">共有された項目はまだありません</li>';
+    return;
+  }
+  for (const it of data.items) {
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = it.kind === "text" ? "テキスト" : it.name;
+    li.appendChild(name);
+    const size = document.createElement("span");
+    size.className = "size";
+    size.textContent = fmtSize(it.size);
+    li.appendChild(size);
+    if (it.kind === "file") {
+      const a = document.createElement("a");
+      a.href = base + "/files/" + it.id;
+      a.textContent = "ダウンロード";
+      li.appendChild(a);
+    } else {
+      const btn = document.createElement("button");
+      btn.textContent = "コピー";
+      btn.onclick = () => copyText(it.text);
+      li.appendChild(btn);
+      const pre = document.createElement("pre");
+      pre.textContent = it.text;
+      li.appendChild(pre);
+    }
+    ul.appendChild(li);
+  }
+}
+
+const es = new EventSource(base + "/events");
+es.onmessage = loadItems;
+es.onerror = () => {
+  // 失効後は SSE も 403 になる。items で判定する
+  loadItems();
+};
+loadItems();
+</script>
+</body>
+</html>
