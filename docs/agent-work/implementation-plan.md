@@ -7,7 +7,7 @@
 
 | ID | タスク | 対応 DES/REQ | 依存 | 完了条件 | 状態 | 担当 |
 |----|--------|--------------|------|----------|------|------|
-| TASK-001 | Go モジュール雛形 + Logging | DES-007 | — | `go build ./...` 成功。ログが `%APPDATA%\QRDrop\logs\` に出力され、本文/内容を含まない | TODO | Implementer |
+| TASK-001 | Go モジュール雛形 + Logging | DES-007 | — | `go build ./...` 成功。ログが `%APPDATA%\QRDrop\logs\` に出力され、本文/内容を含まない | DONE | Implementer |
 | TASK-002 | SessionManager(トークン生成・TTL・失効) | DES-002 / REQ-001, 005, NFR-002 | TASK-001 | 単体テストで生成・検証・TTL失効・手動失効・再発行が Pass | TODO | Implementer |
 | TASK-003 | LanGuard(IP 検査・トークン検査・サニタイズ) | DES-004 / REQ-004, NFR-002 | TASK-002 | 単体テストでプライベート/パブリック IP 判定、/admin ループバック限定、無効トークン 403、ファイル名サニタイズが Pass | TODO | Implementer |
 | TASK-004 | TransferHandler(upload/download/text/items) | DES-003 / REQ-002, 003, 006, NFR-001, 002, 005 | TASK-003 | 単体テストで multipart 保存(.part→rename、連番)、2GB 上限 413、ダウンロード、テキスト送受が Pass | TODO | Implementer |
@@ -28,7 +28,7 @@ graph LR
 
 | ID | 完了日 | ブランチ/PR | 検証内容(実行したコマンド・確認した動作) |
 |----|--------|-------------|--------------------------------------------|
-| — | — | — | — |
+| TASK-001 | 2026-07-12 | feature/TASK-001-qrdrop-scaffold | `gofmt -l .`(差分なし)/ `go vet ./...` / `go test ./...`(logging 1件 Pass)。ログ出力内容に操作・IP・ファイル名のみ含まれることをテストで確認 |
 
 ## 積み残し(TODO/FIXME の転記先)
 
