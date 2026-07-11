@@ -8,10 +8,10 @@
 |------|------|
 | プロジェクト名 | QR コード LAN データ転送(QRDrop) |
 | 開始日 | 2026-07-09 |
-| 現在工程 | P5(完了)。P6 は未着手 |
-| 現在状態 | P5 DONE。ユーザー指示範囲(「レビューまで」)を完遂し、P6 開始指示待ち |
-| 現在の担当ロール/エージェント | Orchestrator(Claude Code) |
-| 最新ハンドオフ | [20260712-0330-tester-to-reviewer.md](handoffs/20260712-0330-tester-to-reviewer.md) |
+| 現在工程 | P6 |
+| 現在状態 | WAITING_APPROVAL(G3 承認待ち) |
+| 現在の担当ロール/エージェント | Releaser(Claude Code) |
+| 最新ハンドオフ | [20260712-0400-reviewer-to-releaser.md](handoffs/20260712-0400-reviewer-to-releaser.md) |
 | ブロッカー | なし(CLARIFY 3件は [q-20260709-1](questions/q-20260709-1.md) 参照・前提置き済み) |
 
 ## 工程状況
@@ -24,7 +24,7 @@
 | P3 実装 | DONE | [implementation-plan.md](implementation-plan.md) | 2026-07-12 |
 | P4 テスト | DONE | [test/test-report.md](test/test-report.md) | 2026-07-12 |
 | P5 レビュー | DONE | [review/review-report-1.md](review/review-report-1.md) | 2026-07-12 |
-| P6 リリース | NOT_STARTED | release/ | — |
+| P6 リリース | WAITING_APPROVAL | [release/release-notes-v0.1.0.md](release/release-notes-v0.1.0.md) | —(G3 待ち) |
 | P7 運用 | NOT_STARTED | ops/runbook.md | — |
 
 ※ DEC-001: ユーザーの一括指示により P1/P2 成果物をドラフト先行作成。G1 で要件修正が入った場合、P2 は REWORK となる。
@@ -47,6 +47,7 @@
 
 | 日時 | 担当 | 内容 |
 |------|------|------|
+| 2026-07-12 04:10 | Releaser | P6 開始。release-notes-v0.1.0 作成。リリース前検証: go1.26.5 で build/43 テスト全 Pass・govulncheck 0 件・本番相当ビルド起動確認。DEC-008(タグ接頭辞・toolchain)。G3 承認待ちへ |
 | 2026-07-12 04:00 | Reviewer/Orchestrator | P5 総合レビュー完了(実施: 別サブエージェント=分離規則充足)。判定**リリース可**(Critical 0 / Major 0 / Minor 4 は申し送り)。govulncheck 実施(stdlib 11 件検出、実害到達は限定的、toolchain 更新を G3 で推奨)。P5 完了チェックリスト全消化。ユーザー指示範囲はここまで(P6 は G3 承認・開始指示待ち) |
 | 2026-07-12 03:30 | Tester | P4 完了チェックリスト消化: TC-001〜017 実行(自動 43 件 Pass、手動 TC-009 Pass、TC-013 は Could・実機なしで未実施として記録)。Must 全 Pass で判定合格。TASK-008(テスト容易性の関数抽出)実施。P5 へ |
 | 2026-07-12 03:00 | Implementer | P3 完了チェックリスト消化: TASK-001〜007 全完了、main で build 成功・単体テスト 30 件 Pass・gofmt/go vet/staticcheck 指摘ゼロ・秘密情報/TODO なし(grep 確認)・README 手順どおり起動確認・設計逸脱は DEC-007 に記録。P4 へ |
