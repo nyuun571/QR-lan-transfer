@@ -8,10 +8,10 @@
 |------|------|
 | プロジェクト名 | QR コード LAN データ転送(QRDrop) |
 | 開始日 | 2026-07-09 |
-| 現在工程 | P4 |
+| 現在工程 | P5 |
 | 現在状態 | IN_PROGRESS |
-| 現在の担当ロール/エージェント | Tester(Claude Code) |
-| 最新ハンドオフ | [20260712-0300-implementer-to-tester.md](handoffs/20260712-0300-implementer-to-tester.md) |
+| 現在の担当ロール/エージェント | Reviewer(分離規則により別セッションのサブエージェント) |
+| 最新ハンドオフ | [20260712-0330-tester-to-reviewer.md](handoffs/20260712-0330-tester-to-reviewer.md) |
 | ブロッカー | なし(CLARIFY 3件は [q-20260709-1](questions/q-20260709-1.md) 参照・前提置き済み) |
 
 ## 工程状況
@@ -22,8 +22,8 @@
 | P1 要件定義 | DONE | [requirements-spec.md](requirements-spec.md) | 2026-07-11(G1 承認) |
 | P2 設計 | DONE | [design/design-doc.md](design/design-doc.md) | 2026-07-11(G2 承認) |
 | P3 実装 | DONE | [implementation-plan.md](implementation-plan.md) | 2026-07-12 |
-| P4 テスト | IN_PROGRESS | test/test-report.md | — |
-| P5 レビュー | NOT_STARTED | review/ | — |
+| P4 テスト | DONE | [test/test-report.md](test/test-report.md) | 2026-07-12 |
+| P5 レビュー | IN_PROGRESS | review/ | — |
 | P6 リリース | NOT_STARTED | release/ | — |
 | P7 運用 | NOT_STARTED | ops/runbook.md | — |
 
@@ -47,6 +47,7 @@
 
 | 日時 | 担当 | 内容 |
 |------|------|------|
+| 2026-07-12 03:30 | Tester | P4 完了チェックリスト消化: TC-001〜017 実行(自動 43 件 Pass、手動 TC-009 Pass、TC-013 は Could・実機なしで未実施として記録)。Must 全 Pass で判定合格。TASK-008(テスト容易性の関数抽出)実施。P5 へ |
 | 2026-07-12 03:00 | Implementer | P3 完了チェックリスト消化: TASK-001〜007 全完了、main で build 成功・単体テスト 30 件 Pass・gofmt/go vet/staticcheck 指摘ゼロ・秘密情報/TODO なし(grep 確認)・README 手順どおり起動確認・設計逸脱は DEC-007 に記録。P4 へ |
 | 2026-07-12 | Implementer | TASK-001〜007 実装(コード: 04-qr-lan-transfer/qrdrop/。各タスクの検証内容は implementation-plan.md 実施記録参照) |
 | 2026-07-11 | Orchestrator | ユーザー指示「レビューまで」を受領。DEC-006 を記録し G1/G2 承認を記録。P3 開始(Implementer へハンドオフ) |

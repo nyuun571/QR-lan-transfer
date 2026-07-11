@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strings"
 	"testing"
 )
 
@@ -34,6 +35,17 @@ func TestFilterPrivateIPv4(t *testing.T) {
 		if got[i] != want[i] {
 			t.Errorf("got[%d] = %s, want %s", i, got[i], want[i])
 		}
+	}
+}
+
+// TC-003: LAN 未接続時は「ネットワーク未接続」エラーで起動中断(REQ-001 異常系)
+func TestCheckLanNoNetwork(t *testing.T) {
+	err := checkLan(nil)
+	if err == nil || !strings.Contains(err.Error(), "ネットワーク未接続") {
+		t.Errorf("checkLan(nil) = %v, want ネットワーク未接続エラー", err)
+	}
+	if err := checkLan([]string{"192.168.1.3"}); err != nil {
+		t.Errorf("LAN 検出時にエラー: %v", err)
 	}
 }
 

@@ -46,6 +46,14 @@ func filterPrivateIPv4(addrs []net.Addr) []string {
 	return out
 }
 
+// checkLan はプライベート IPv4 が検出されない場合に起動を中断するエラーを返す(REQ-001 異常系)。
+func checkLan(ips []string) error {
+	if len(ips) == 0 {
+		return fmt.Errorf("ネットワーク未接続です。Wi-Fi または有線 LAN に接続してから再起動してください")
+	}
+	return nil
+}
+
 // listenWithFallback は port から順に最大 tries 個のポートを試して Listen する(DES-001)。
 func listenWithFallback(port, tries int) (net.Listener, int, error) {
 	for p := port; p < port+tries; p++ {

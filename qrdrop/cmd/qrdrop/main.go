@@ -61,8 +61,8 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("ネットワークインターフェースを取得できません: %w", err)
 	}
-	if len(ips) == 0 {
-		return fmt.Errorf("ネットワーク未接続です。Wi-Fi または有線 LAN に接続してから再起動してください")
+	if err := checkLan(ips); err != nil {
+		return err
 	}
 
 	ln, actualPort, err := listenWithFallback(*port, portTries)
