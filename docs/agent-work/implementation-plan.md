@@ -13,7 +13,7 @@
 | TASK-004 | TransferHandler(upload/download/text/items) | DES-003 / REQ-002, 003, 006, NFR-001, 002, 005 | TASK-003 | 単体テストで multipart 保存(.part→rename、連番)、2GB 上限 413、ダウンロード、テキスト送受が Pass | DONE | Implementer |
 | TASK-005 | WebUI(管理/転送ページ)+ SSE + QRDisplay | DES-005, 006 / REQ-001, 002, 003, 006 | TASK-004 | 管理ページ・転送ページが配信され、QR PNG が生成され、SSE で一覧更新イベントが届く(httptest で確認) | DONE | Implementer |
 | TASK-006 | Bootstrap(NIC 検出・ポート確保・ブラウザ起動・main 統合) | DES-001 / REQ-001 | TASK-005 | exe を起動すると管理ページが開き QR が表示される(実機確認)。LAN 未接続時はエラー表示 | DONE | Implementer |
-| TASK-007 | README(セットアップ・非推奨事項・AP アイソレーション案内) | ADR-001, 002 / REQ-004 | TASK-006 | README 記載の手順どおりにビルド・起動できることを確認 | TODO | Implementer |
+| TASK-007 | README(セットアップ・非推奨事項・AP アイソレーション案内) | ADR-001, 002 / REQ-004 | TASK-006 | README 記載の手順どおりにビルド・起動できることを確認 | DONE | Implementer |
 
 ## 実施順序
 
@@ -34,6 +34,7 @@ graph LR
 | TASK-004 | 2026-07-12 | feature/TASK-004-qrdrop-transfer | `gofmt` / `go vet` / `go test ./internal/transfer/`(10件 Pass)。streaming 保存・.part 除去・連番保存(doc (1).txt)・トラバーサル名の封じ込め・上限超過 413 と残骸なし・テキスト送受・共有/ダウンロード・SSE 通知を確認 |
 | TASK-005 | 2026-07-12 | feature/TASK-005-qrdrop-webui | `go mod tidy` / `gofmt` / `go vet` / `go test ./...`(web 7件含む全 Pass)。管理/転送ページ配信、QR PNG マジックバイト、revoke 後の旧 URL 403+再読取案内、NIC 選択、SSE 初期イベントを確認 |
 | TASK-006 | 2026-07-12 | feature/TASK-006-qrdrop-bootstrap | `go build -o qrdrop.exe ./cmd/qrdrop` 成功。実起動スモークテスト: 8931 使用中→8932 へ自動フォールバック、NIC 2件検出(192.168.1.3 / 172.19.80.1)、curl で管理ページ 200・qr.png PNG マジック・LAN IP 経由の転送ページ 200・アップロード保存・`/` 403・LAN IP からの /admin 403・不正トークン 403 を確認。単体テスト(NIC フィルタ・ポートフォールバック)Pass |
+| TASK-007 | 2026-07-12 | feature/TASK-007-qrdrop-readme | README 記載どおり `go build ./cmd/qrdrop` → `.\qrdrop.exe` を実行し、管理ページ 200 を確認。セキュリティ注意(平文 HTTP・公衆 Wi-Fi 非推奨・ポート開放禁止)、AP アイソレーション案内を ADR-001/002 の決定事項どおり記載 |
 
 ## 積み残し(TODO/FIXME の転記先)
 
