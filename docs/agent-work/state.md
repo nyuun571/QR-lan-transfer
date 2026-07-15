@@ -8,11 +8,11 @@
 |------|------|
 | プロジェクト名 | QR コード LAN データ転送(QRDrop) |
 | 開始日 | 2026-07-09 |
-| 現在工程 | P7(常駐工程) |
-| 現在状態 | OPERATING(運用フェーズ移行済み。障害・変更要求の受付待ち) |
-| 現在の担当ロール/エージェント | Operator(Claude Code) |
+| 現在工程 | P1(REWORK。v2 Web サービス化) |
+| 現在状態 | WAITING_APPROVAL(G1 再承認待ち) |
+| 現在の担当ロール/エージェント | Analyst(Claude Code) |
 | 最新ハンドオフ | [20260712-1830-releaser-to-operator.md](handoffs/20260712-1830-releaser-to-operator.md) |
-| ブロッカー | なし(CLARIFY 3件は [q-20260709-1](questions/q-20260709-1.md) 参照・前提置き済み) |
+| ブロッカー | なし |
 
 ## 工程状況
 
@@ -24,10 +24,12 @@
 | P3 実装 | DONE | [implementation-plan.md](implementation-plan.md) | 2026-07-12 |
 | P4 テスト | DONE | [test/test-report.md](test/test-report.md) | 2026-07-12 |
 | P5 レビュー | DONE | [review/review-report-1.md](review/review-report-1.md) | 2026-07-12 |
-| P6 リリース | DONE | [release/release-notes-v0.1.0.md](release/release-notes-v0.1.0.md) | 2026-07-12(G3 承認・タグ `qrdrop-v0.1.0`) |
-| P7 運用 | OPERATING(初期セットアップ完了) | [ops/runbook.md](ops/runbook.md) | 2026-07-12(セットアップ完了。工程自体は常駐) |
+| P6 リリース | DONE(v1) | [release/release-notes-v0.1.0.md](release/release-notes-v0.1.0.md) | 2026-07-12(G3 承認・タグ `qrdrop-v0.1.0`) |
+| P7 運用 | OPERATING(v1 は継続運用。v2 起票により変更要求フロー発動) | [ops/runbook.md](ops/runbook.md) | 2026-07-12(v1 セットアップ完了) |
+| P1 要件定義(v2) | WAITING_APPROVAL | [requirements-spec.md](requirements-spec.md)(REQ-101〜106・NFR-101〜105) | —(G1 再承認待ち) |
 
 ※ DEC-001: ユーザーの一括指示により P1/P2 成果物をドラフト先行作成。G1 で要件修正が入った場合、P2 は REWORK となる。
+※ DEC-010(2026-07-13): Cloudflare を用いた Web サービス化の変更要求を受理し P1 REWORK へ。v1(exe 版・LAN 限定)は本改訂と独立して運用継続、v2 は新設要件として追加する(既存 REQ を上書きするのではなく、実現方式が変わる箇所を明示して改訂)。
 
 ## ゲート承認記録
 
@@ -47,6 +49,7 @@
 
 | 日時 | 担当 | 内容 |
 |------|------|------|
+| 2026-07-13 02:00 | Analyst | ユーザー指示「Cloudflare を使って公開する」→「正式に着手する」を変更要求として受理、P1 REWORK へ(DEC-010)。requirements-spec.md を v2 改訂: §0 版構成(v1/v2 併存)、REQ-101〜106(ルーム作成・双方向転送・同一ネットワーク限定・失効・進捗)、NFR-101〜105 を新設。v1(REQ-001〜006)は無変更。project-brief.md に不整合(§3 非公開前提)の解消を変更履歴として追記。P1 完了チェックリスト消化、G1 再承認待ちへ |
 | 2026-07-13 01:00 | Operator | 本プロジェクトを独立 git リポジトリ化(ユーザー指示)。親リポジトリ design-doc から `git subtree split` で [P0]〜[P7] の全 16 コミットを引き継ぎ、タグ `qrdrop-v0.1.0` を対応コミット(0297cfa)に再作成。agentOS/ は従来どおり独立リポジトリとして .gitignore で除外。親リポジトリ側は本ディレクトリの追跡を解除。Web サービス化(v2)の公開リポジトリ切り出し(計画 Phase C)の下準備を兼ねる |
 | 2026-07-12 18:40 | Operator | P7 運用初期セットアップ完了: runbook.md 作成(起動/停止/監視/ロールバック/既知の問題転記/定期作業)。手順を実地検証(起動→ヘルスチェック 200→taskkill 停止→接続不可を確認。ログ出力先 %APPDATA%\QRDrop\logs も実在確認)。運用フェーズへ移行。以後は障害報告・変更要求を 7-2/7-3 フローで受付 |
 | 2026-07-12 18:30 | Releaser | ユーザー指示「次に進める」を G3 保留解除=承認と解釈(DEC-009)。リリース実行: main 最新で 43 テスト再実行全 Pass(go1.26.5)→ 本番相当ビルド → スモークテスト 4 項目全 Pass(REQ-001〜004 の代表操作。release-notes に記録)→ タグ `qrdrop-v0.1.0` 作成(対象 3180c0f)。P6 完了チェックリスト全消化。P7(運用初期セットアップ)へハンドオフ |
